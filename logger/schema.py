@@ -28,6 +28,7 @@ def build_record(
         "text": normalized["text"],
         "tool_name": normalized["tool_name"],
         "tool_args": normalized["tool_args"],
+        "tool_calls": normalized["tool_calls"],
         "latency_ms": latency,
         "status": status,
         "error_type": type(error).__name__ if error else None,

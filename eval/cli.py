@@ -2,11 +2,15 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from collections import defaultdict
 from pathlib import Path
 from statistics import mean
 from typing import Any
 
+from eval.config import load_judge_config
+from eval.runner import evaluate_records
+from eval.semantic import get_semantic_backend
 from eval.tool_match import tool_match
 
 
@@ -52,12 +56,46 @@ def summarize(records: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
-def main() -> None:
+def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Analyze LLM shadow logs.")
-    parser.add_argument("--file", required=True, help="Path to JSONL log file.")
-    args = parser.parse_args()
+    subparsers = parser.add_subparsers(dest="command")
 
+    summary_parser = subparsers.add_parser("summary", help="Summarize paired log records.")
+    summary_parser.add_argument("--file", required=True, help="Path to JSONL log file.")
+
+    judge_parser = subparsers.add_parser("judge", help="Run configured judges against paired log records.")
+    judge_parser.add_argument("--file", required=True, help="Path to JSONL log file.")
+    judge_parser.add_argument("--config", required=True, help="Path to JSON judge config.")
+    judge_parser.add_argument(
+        "--semantic-backend",
+        default="null",
+        choices=["null", "token-overlap"],
+        help="Semantic backend used by semantic_match rules.",
+    )
+
+    return parser
+
+
+def main(argv: list[str] | None = None) -> None:
+    parser = build_parser()
+    argv = list(sys.argv[1:] if argv is None else argv)
+
+    if argv and argv[0] not in {"summary", "judge"}:
+        argv = ["summary", *argv]
+
+    args = parser.parse_args(argv)
     records = load_records(Path(args.file))
+
+    if args.command == "judge":
+        config = load_judge_config(Path(args.config))
+        result = evaluate_records(
+            records,
+            config,
+            semantic_backend=get_semantic_backend(args.semantic_backend),
+        )
+        print(json.dumps(result, indent=2))
+        return
+
     summary = summarize(records)
     print(json.dumps(summary, indent=2))
 

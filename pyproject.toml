@@ -5,6 +5,7 @@ description = "FastAPI shadow proxy for comparing baseline and candidate LLM res
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
+    "boto3>=1.35.0",
     "fastapi>=0.115.0",
     "httpx>=0.27.0",
     "pydantic-settings>=2.5.2",
@@ -13,6 +14,7 @@ dependencies = [
 
 [project.scripts]
 llm-shadow-serve = "proxy.cli:main"
+llm-shadow-report = "eval.report:main"
 
 [project.optional-dependencies]
 analysis = [
